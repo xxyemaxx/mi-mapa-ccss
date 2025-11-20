@@ -1,0 +1,812 @@
+[
+    {
+        "nombre": "Hospital México",
+        "tipo": "Hospital",
+        "tipo_ccss": "Nacional",
+        "latitud": 9.951389,
+        "longitud": -84.115056,
+        "direccion": "La Uruca, San José.",
+        "contacto": "2242-6700 | 2242-6817",
+        "servicios": "Emergencias, Consulta Externa, Especialidades"
+    },
+    {
+        "nombre": "Hospital Rafael Ángel Calderón Guardia",
+        "tipo": "Hospital",
+        "tipo_ccss": "Nacional",
+        "latitud": 9.936556,
+        "longitud": -84.068889,
+        "direccion": "Barrio Aranjuez, San José.",
+        "contacto": "2212-1000 | 2212-1200",
+        "servicios": "Emergencias, Consulta Externa, Especialidades"
+    },
+    {
+        "nombre": "Hospital San Juan de Dios",
+        "tipo": "Hospital",
+        "tipo_ccss": "Nacional",
+        "latitud": 9.933361,
+        "longitud": -84.086167,
+        "direccion": "Paseo Colón, San José.",
+        "contacto": "2547-8000 | 2547-8210",
+        "servicios": "Emergencias, Consulta Externa, Especialidades"
+    },
+    {
+        "nombre": "Centro Nacional de Rehabilitación Humberto Araya Rojas",
+        "tipo": "Hospital",
+        "tipo_ccss": "Especializado",
+        "latitud": 9.948361,
+        "longitud": -84.086167,
+        "direccion": "La Uruca, San José.",
+        "contacto": "2232-8233 | 2220-1336",
+        "servicios": "Rehabilitación"
+    },
+    {
+        "nombre": "Hospital de las Mujeres Adolfo Carit Eva",
+        "tipo": "Hospital",
+        "tipo_ccss": "Especializado",
+        "latitud": 9.923944,
+        "longitud": -84.081222,
+        "direccion": "Barrio Cuba, San José.",
+        "contacto": "2523-5900 | 2523-5902",
+        "servicios": "Ginecología, Maternidad, Especialidades Femeninas"
+    },
+    {
+        "nombre": "Hospital Nacional de Geriatría y Gerontología Raúl Blanco Cervantes",
+        "tipo": "Hospital",
+        "tipo_ccss": "Especializado",
+        "latitud": 9.931917,
+        "longitud": -84.086556,
+        "direccion": "Barrio Claret, San José.",
+        "contacto": "2542-2100 | 2522-7700",
+        "servicios": "Geriatría, Gerontología, Atención a la Persona Mayor"
+    },
+    {
+        "nombre": "Hospital Nacional de Niños Carlos Sáenz Herrera",
+        "tipo": "Hospital",
+        "tipo_ccss": "Especializado",
+        "latitud": 9.934139,
+        "longitud": -84.086694,
+        "direccion": "Avenida 2, San José.",
+        "contacto": "2523-3600 | 2223-1601",
+        "servicios": "Especialidades Pediátricas, Internamiento, Emergencias"
+    },
+    {
+        "nombre": "Hospital Nacional de Salud Mental Manuel Antonio Chapuí y Torres",
+        "tipo": "Hospital",
+        "tipo_ccss": "Especializado",
+        "latitud": 9.954528,
+        "longitud": -84.137806,
+        "direccion": "Pavas, San José.",
+        "contacto": "2242-6300 | 2232-2155",
+        "servicios": "Salud Mental"
+    },
+    {
+        "nombre": "Hospital Psiquiátrico Roberto Chacón Paut",
+        "tipo": "Hospital",
+        "tipo_ccss": "Especializado",
+        "latitud": 9.935306,
+        "longitud": -83.976639,
+        "direccion": "Tres Ríos, Cartago.",
+        "contacto": "2216-6400",
+        "servicios": "Psiquiatría y Salud Mental"
+    },
+    {
+        "nombre": "Hospital de San Carlos",
+        "tipo": "Hospital",
+        "tipo_ccss": "Regional",
+        "latitud": 10.343222,
+        "longitud": -84.431472,
+        "direccion": "Ciudad Quesada, Alajuela.",
+        "contacto": "2401-1200 | 2401-1325",
+        "servicios": "Medicina General, Cirugía, Ginecología"
+    },
+    {
+        "nombre": "Hospital Enrique Baltodano Briceño",
+        "tipo": "Hospital",
+        "tipo_ccss": "Regional",
+        "latitud": 10.638556,
+        "longitud": -85.431417,
+        "direccion": "Liberia, Guanacaste.",
+        "contacto": "2690-2300 | 2690-2302",
+        "servicios": "Medicina General, Cirugía, Ginecología"
+    },
+    {
+        "nombre": "Hospital Fernando Escalante Pradilla",
+        "tipo": "Hospital",
+        "tipo_ccss": "Regional",
+        "latitud": 9.367500,
+        "longitud": -83.703722,
+        "direccion": "San Isidro de El General, San José.",
+        "contacto": "2785-0700 | 2771-0874",
+        "servicios": "Medicina General, Cirugía, Ginecología"
+    },
+    {
+        "nombre": "Hospital Maximiliano Peralta Jiménez",
+        "tipo": "Hospital",
+        "tipo_ccss": "Regional",
+        "latitud": 9.861333,
+        "longitud": -83.921722,
+        "direccion": "Cartago centro.",
+        "contacto": "2550-1999 | 2550-1993",
+        "servicios": "Medicina General, Cirugía, Ginecología"
+    },
+    {
+        "nombre": "Hospital San Rafael",
+        "tipo": "Hospital",
+        "tipo_ccss": "Regional",
+        "latitud": 10.007167,
+        "longitud": -84.210806,
+        "direccion": "Alajuela centro.",
+        "contacto": "2436-1001 | 2436-1543",
+        "servicios": "Medicina General, Cirugía, Ginecología"
+    },
+    {
+        "nombre": "Hospital San Vicente de Paúl",
+        "tipo": "Hospital",
+        "tipo_ccss": "Regional",
+        "latitud": 9.990472,
+        "longitud": -84.121833,
+        "direccion": "Heredia centro.",
+        "contacto": "2562-8100 | 2563-8352",
+        "servicios": "Medicina General, Cirugía, Ginecología"
+    },
+    {
+        "nombre": "Hospital Tony Facio Castro",
+        "tipo": "Hospital",
+        "tipo_ccss": "Regional",
+        "latitud": 10.000000,
+        "longitud": -83.026694,
+        "direccion": "Limón centro.",
+        "contacto": "2758-2222 | 2758-0970",
+        "servicios": "Medicina General, Cirugía, Ginecología"
+    },
+    {
+        "nombre": "Hospital Víctor Manuel Sanabria Martínez",
+        "tipo": "Hospital",
+        "tipo_ccss": "Regional",
+        "latitud": 9.974306,
+        "longitud": -84.752139,
+        "direccion": "Puntarenas centro.",
+        "contacto": "2630-8000 | 2630-8025",
+        "servicios": "Medicina General, Cirugía, Ginecología"
+    },
+    {
+        "nombre": "Hospital Los Chiles",
+        "tipo": "Hospital",
+        "tipo_ccss": "Periférico 1",
+        "latitud": 11.030111,
+        "longitud": -84.711889,
+        "direccion": "Los Chiles, Alajuela.",
+        "contacto": "2471-2000",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Hospital Manuel Mora Valverde",
+        "tipo": "Hospital",
+        "tipo_ccss": "Periférico 1",
+        "latitud": 8.643278,
+        "longitud": -83.170778,
+        "direccion": "Golfito, Puntarenas.",
+        "contacto": "2702-2157",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Hospital Max Terán Valls",
+        "tipo": "Hospital",
+        "tipo_ccss": "Periférico 1",
+        "latitud": 9.442750,
+        "longitud": -84.136583,
+        "direccion": "Quepos, Puntarenas.",
+        "contacto": "2774-9500",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Hospital Tomás Casas Casajús",
+        "tipo": "Hospital",
+        "tipo_ccss": "Periférico 1",
+        "latitud": 8.987667,
+        "longitud": -83.545389,
+        "direccion": "Osa, Puntarenas.",
+        "contacto": "2786-8148 | 2786-4317",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Hospital Upala",
+        "tipo": "Hospital",
+        "tipo_ccss": "Periférico 1",
+        "latitud": 10.897528,
+        "longitud": -85.023750,
+        "direccion": "Upala, Alajuela.",
+        "contacto": "2470-0058 | 2480-0011",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Hospital de Ciudad Neily",
+        "tipo": "Hospital",
+        "tipo_ccss": "Periférico 2",
+        "latitud": 8.631806,
+        "longitud": -82.937611,
+        "direccion": "Ciudad Neily, Puntarenas.",
+        "contacto": "2785-9600, 25390000 | 2785-9698",
+        "servicios": "Medicina General, Maternidad"
+    },
+    {
+        "nombre": "Hospital Juana Pirola",
+        "tipo": "Hospital",
+        "tipo_ccss": "Periférico 2",
+        "latitud": 8.813806,
+        "longitud": -82.967667,
+        "direccion": "San Vito de Coto Brus, Puntarenas.",
+        "contacto": "2773-1100",
+        "servicios": "Medicina General, Maternidad"
+    },
+    {
+        "nombre": "Hospital San Francisco de Asís",
+        "tipo": "Hospital",
+        "tipo_ccss": "Periférico 2",
+        "latitud": 10.071417,
+        "longitud": -84.315972,
+        "direccion": "Grecia, Alajuela.",
+        "contacto": "2437-9500 | 2437-9757",
+        "servicios": "Medicina General, Maternidad"
+    },
+    {
+        "nombre": "Hospital Carlos Luis Valverde Vega",
+        "tipo": "Hospital",
+        "tipo_ccss": "Periférico 3",
+        "latitud": 10.092861,
+        "longitud": -84.469889,
+        "direccion": "San Ramón, Alajuela.",
+        "contacto": "2456-9700 | 2456-9751",
+        "servicios": "Medicina General"
+    },
+    {
+        "nombre": "Hospital de Guápiles",
+        "tipo": "Hospital",
+        "tipo_ccss": "Periférico 3",
+        "latitud": 10.217000,
+        "longitud": -83.788806,
+        "direccion": "Guápiles, Limón.",
+        "contacto": "2710-6801 | 2710-2002",
+        "servicios": "Medicina General"
+    },
+    {
+        "nombre": "Hospital de La Anexión",
+        "tipo": "Hospital",
+        "tipo_ccss": "Periférico 3",
+        "latitud": 10.148417,
+        "longitud": -85.453694,
+        "direccion": "Nicoya, Guanacaste.",
+        "contacto": "2685-8400 | 2685-8473",
+        "servicios": "Medicina General"
+    },
+    {
+        "nombre": "Hospital William Allen Taylor",
+        "tipo": "Hospital",
+        "tipo_ccss": "Periférico 3",
+        "latitud": 9.903250,
+        "longitud": -83.686417,
+        "direccion": "Turrialba, Cartago.",
+        "contacto": "2558-1300 | 2556-1663",
+        "servicios": "Medicina General"
+    },
+    {
+        "nombre": "Clínica Dr. Carlos Durán Cartín",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.9328,
+        "longitud": -84.0752,
+        "direccion": "Plaza Viquez, 500 metros este de, Av. 26, San José",
+        "contacto": "2226-6116",
+        "servicios": "Medicina General, Especialidades"
+    },
+    {
+        "nombre": "Clínica Marcial Fallas",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.9077,
+        "longitud": -84.0621,
+        "direccion": "209, San José, Desamparados",
+        "contacto": "2217-0400",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Clínica Ricardo Jiménez Núñez",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.9575,
+        "longitud": -84.0538,
+        "direccion": "Guadalupe, San José",
+        "contacto": "2224-6511",
+        "servicios": "Medicina General, Especialidades"
+    },
+    {
+        "nombre": "Clínica Solón Núñez Frutos",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.9198,
+        "longitud": -84.1065,
+        "direccion": "Ruta Nacional Secundaria 110, San José, Hatillo Centro",
+        "contacto": "2254-8565",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Clínica Central de San Juan-San Diego-Concepción",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.9238,
+        "longitud": -84.0040,
+        "direccion": "San José",
+        "contacto": "2220-6977",
+        "servicios": "Medicina General, Odontología"
+    },
+    {
+        "nombre": "Clínica de Coronado",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.9822,
+        "longitud": -83.9936,
+        "direccion": "San Isidro, San José",
+        "contacto": "2216-0500",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Clínica Dr. Clorito Picado",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.9482,
+        "longitud": -84.0935,
+        "direccion": "Uruca, San José",
+        "contacto": "2547-3300",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Clínica de la Ciudadela 15 de Setiembre",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.9230,
+        "longitud": -84.1205,
+        "direccion": "Calle 68, San José",
+        "contacto": "2254-1234",
+        "servicios": "Medicina General, Odontología"
+    },
+    {
+        "nombre": "Clínica de Tibás",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.9602,
+        "longitud": -84.0792,
+        "direccion": "Avenida 67, San Vicente, Tibás",
+        "contacto": "2240-3000",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Clínica de Pavas",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.9405,
+        "longitud": -84.1250,
+        "direccion": "Pavas, San José",
+        "contacto": "2220-4567",
+        "servicios": "Medicina General, Especialidades"
+    },
+    {
+        "nombre": "Clínica de San Sebastián",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.9174,
+        "longitud": -84.0865,
+        "direccion": "San José, San Sebastián",
+        "contacto": "2254-8800",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Clínica Sarchí",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 10.0815,
+        "longitud": -84.3418,
+        "direccion": "Sarchí Norte, Alajuela",
+        "contacto": "2454-4636",
+        "servicios": "Medicina General"
+    },
+    {
+        "nombre": "Clínica San Roque de Grecia",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 10.0638,
+        "longitud": -84.3056,
+        "direccion": "Grecia, Alajuela",
+        "contacto": "2444-1000",
+        "servicios": "Medicina General"
+    },
+    {
+        "nombre": "Clínica San Ramón",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 10.0877,
+        "longitud": -84.4755,
+        "direccion": "San Ramón, Alajuela",
+        "contacto": "2445-5656",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Clínica de Naranjo",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 10.0932,
+        "longitud": -84.3752,
+        "direccion": "Provincia de Alajuela, Naranjo",
+        "contacto": "2450-4946",
+        "servicios": "Medicina General, Odontología"
+    },
+    {
+        "nombre": "Clínica de Cartago",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.8660,
+        "longitud": -83.9140,
+        "direccion": "Cartago, Provincia de Cartago",
+        "contacto": "2592-2062",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Clínica de Oreamuno Pacayas Tierra Blanca",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.8519,
+        "longitud": -83.8967,
+        "direccion": "Av. 11, Provincia de Cartago, Cartago",
+        "contacto": "2553-4156",
+        "servicios": "Medicina General"
+    },
+    {
+        "nombre": "Clínica de Paraíso-Cervantes",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.8398,
+        "longitud": -83.8744,
+        "direccion": "Paraíso, Provincia de Cartago",
+        "contacto": "2575-0613",
+        "servicios": "Medicina General"
+    },
+    {
+        "nombre": "Clínica de Heredia Cubujuquí",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.9972,
+        "longitud": -84.1166,
+        "direccion": "Heredia",
+        "contacto": "2261-0744",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Clínica de Santa Bárbara",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 10.0454,
+        "longitud": -84.1481,
+        "direccion": "Av. 8, Heredia, Santa Bárbara",
+        "contacto": "2269-6396",
+        "servicios": "Medicina General"
+    },
+    {
+        "nombre": "Clínica de San Rafael de Heredia",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 10.0076,
+        "longitud": -84.0910,
+        "direccion": "San Rafael de Heredia",
+        "contacto": "2261-0001",
+        "servicios": "Medicina General, Odontología"
+    },
+    {
+        "nombre": "Clínica de San Pablo",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 10.0102,
+        "longitud": -84.0858,
+        "direccion": "San Pablo de Heredia",
+        "contacto": "2261-0002",
+        "servicios": "Medicina General"
+    },
+    {
+        "nombre": "Clínica de Santo Domingo de Heredia",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 9.9930,
+        "longitud": -84.0863,
+        "direccion": "Santo Domingo, Heredia",
+        "contacto": "2261-0003",
+        "servicios": "Medicina General, Emergencias"
+    },
+    {
+        "nombre": "Clínica de Barva",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 10.0245,
+        "longitud": -84.1030,
+        "direccion": "Barva de Heredia",
+        "contacto": "2261-0004",
+        "servicios": "Medicina General"
+    },
+    {
+        "nombre": "Clínica de San Isidro de Heredia",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 10.0130,
+        "longitud": -84.0535,
+        "direccion": "San Isidro de Heredia",
+        "contacto": "2261-0005",
+        "servicios": "Medicina General"
+    },
+    {
+        "nombre": "Clínica de Flores",
+        "tipo": "Clínica",
+        "tipo_ccss": "Clínica",
+        "latitud": 10.0070,
+        "longitud": -84.1350,
+        "direccion": "Flores, Heredia",
+        "contacto": "2261-0006",
+        "servicios": "Medicina General"
+    },
+    {
+        "nombre": "Ebais Alajuela",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 10.0094,
+        "longitud": -84.2155,
+        "direccion": "C. 3 Arroyo, Provincia de Alajuela, Alajuela, Arroyo",
+        "contacto": "2443-4845",
+        "servicios": "Atención Primaria, Control de Crónicos"
+    },
+    {
+        "nombre": "Ebais Sede Área de Salud Alajuela Oeste",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 10.0076,
+        "longitud": -84.2097,
+        "direccion": "San José, Provincia de Alajuela",
+        "contacto": "2220-6300",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais Santa Clara",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 10.4206,
+        "longitud": -84.6185,
+        "direccion": "Provincia de Alajuela, San Carlos, Castro",
+        "contacto": "2459-1000",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais Florencia",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 10.3643,
+        "longitud": -84.4608,
+        "direccion": "Provincia de Alajuela, Florencia",
+        "contacto": "2475-5209",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais San Francisco",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9234,
+        "longitud": -84.1165,
+        "direccion": "San José",
+        "contacto": "2283-3261",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais León Xlll",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9674,
+        "longitud": -84.0886,
+        "direccion": "San Juan, San José",
+        "contacto": "6055-7840",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais de San Sebastián",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9168,
+        "longitud": -84.0899,
+        "direccion": "Ruta Nacional",
+        "contacto": "2286-1981",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais de Guadalupe",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9575,
+        "longitud": -84.0538,
+        "direccion": "Guadalupe",
+        "contacto": "2224-6511",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais de Desamparados",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.8820,
+        "longitud": -84.0322,
+        "direccion": "Desamparados",
+        "contacto": "2250-1234",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais de Hatillo",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9198,
+        "longitud": -84.1065,
+        "direccion": "Hatillo Centro",
+        "contacto": "2254-8565",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais de San Juan de Dios",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9238,
+        "longitud": -84.0040,
+        "direccion": "San Juan de Dios",
+        "contacto": "2220-6977",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais de Coronado",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9822,
+        "longitud": -83.9936,
+        "direccion": "Coronado",
+        "contacto": "2216-0500",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais de Tibás",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9602,
+        "longitud": -84.0792,
+        "direccion": "Tibás",
+        "contacto": "2240-3000",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais de Pavas",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9405,
+        "longitud": -84.1250,
+        "direccion": "Pavas, Sector 5.",
+        "contacto": "2220-4567",
+        "servicios": "Atención Primaria, Control de Crónicos"
+    },
+    {
+        "nombre": "Ebais Curridabat",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9287,
+        "longitud": -84.0345,
+        "direccion": "Curridabat, San José",
+        "contacto": "2234-5678",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais La Fortuna",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 10.4735,
+        "longitud": -84.6410,
+        "direccion": "La Fortuna, San Carlos",
+        "contacto": "2479-1111",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais Los Guido",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.8700,
+        "longitud": -84.0350,
+        "direccion": "Los Guido, Desamparados",
+        "contacto": "2251-2345",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais Barrio Lourdes",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 10.0076,
+        "longitud": -84.1105,
+        "direccion": "Barrio Lourdes, Heredia",
+        "contacto": "2261-9999",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "EBAIS - Ciud. Bernardo Benavides",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9984,
+        "longitud": -84.1353,
+        "direccion": "C. 4, Heredia, San Francisco, Ciudadela Bernardo Benavides, 40103",
+        "contacto": "2261-9813",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "EBAIS La Lilliana",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9950,
+        "longitud": -84.1030,
+        "direccion": "Av. 3, Heredia",
+        "contacto": "4040-0808",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais El Chagüite",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9877,
+        "longitud": -84.7350,
+        "direccion": "Provincia de Puntarenas, El Roble, El Chagüite",
+        "contacto": "2664-9917",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "EBAIS de Mojón",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9922,
+        "longitud": -84.7380,
+        "direccion": "Provincia de Puntarenas, Esparza, Barrio El Mojón",
+        "contacto": "2636-8400",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais Fray Casiano",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9678,
+        "longitud": -84.8140,
+        "direccion": "Provincia de Puntarenas, Chacarita, Barrio Fray Casiano de Madriz",
+        "contacto": "6194-4664",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais del Barrio Santa Eduviges",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 9.9930,
+        "longitud": -83.0210,
+        "direccion": "Limón centro",
+        "contacto": "2758-4106",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais de Batán",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 10.1500,
+        "longitud": -83.2500,
+        "direccion": "Batán, Limón",
+        "contacto": "2710-1234",
+        "servicios": "Atención Primaria"
+    },
+    {
+        "nombre": "Ebais Siquirres",
+        "tipo": "EBAIS",
+        "tipo_ccss": "EBAIS",
+        "latitud": 10.0880,
+        "longitud": -83.5090,
+        "direccion": "Siquirres, Limón",
+        "contacto": "2716-5678",
+        "servicios": "Atención Primaria"
+    }
+]
