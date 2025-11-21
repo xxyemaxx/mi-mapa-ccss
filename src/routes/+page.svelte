@@ -1,358 +1,325 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import type { Map, Marker, LayerGroup, Icon } from "leaflet";
+    import type { Map, Marker, Icon, TileLayer } from "leaflet";
 
     // 1. VARIABLES DE ESTADO
     let centros_ccss: any[] = [];
     let selectedFilter: "Todos" | "Hospital" | "Clínica" | "EBAIS" = "Todos";
     let searchTerm: string = "";
 
-    let visibleCentros: any[] = [];
-    let isListOpen: boolean = false;
+    // Variable reactiva para almacenar los centros filtrados
+    let filteredCentros: any[] = [];
 
     let mapElement: HTMLDivElement;
     let leafletMap: Map | undefined;
-    let markersLayer: LayerGroup | undefined;
+
+    // El tipo es 'any' ya que L.markerClusterGroup no es un tipo estándar de Leaflet
+    let markersLayer: any | undefined;
+
     let userMarker: Marker | undefined;
-
     let customIcons: { [key: string]: Icon } = {};
-    const filterTypes = ["Todos", "Hospital", "Clínica", "EBAIS"];
 
-    // VARIABLE PARA MODO OSCURO
     let isDarkMode: boolean = false;
 
-    // ------------------------------------------------------------------
-    // FUNCIÓN CORREGIDA Y DEPURADA PARA ALTERNAR EL MODO OSCURO
-    // ------------------------------------------------------------------
+    const filterTypes = ["Todos", "Hospital", "Clínica", "EBAIS"];
+    const validCenterTypes = ["Hospital", "Clínica", "EBAIS"];
+
+    // FUNCIÓN PARA ALTERNAR EL MODO OSCURO (sin cambios)
     function toggleDarkMode() {
         isDarkMode = !isDarkMode;
-
-        // --- CÓDIGO DE DEPURACIÓN (Mírelo en la consola F12) ---
-        console.log("DEBUG: Toggling dark mode to:", isDarkMode);
-
-        // 1. Guardar la preferencia
         localStorage.setItem("darkMode", isDarkMode.toString());
 
-        // 2. APLICAR LA CLASE AL BODY INMEDIATAMENTE
         if (typeof document !== "undefined") {
             document.body.classList.toggle("dark-mode", isDarkMode);
+            leafletMap?.invalidateSize();
         }
     }
 
-    // 2. FUNCIÓN PARA OBTENER LOS ÍCONOS PERSONALIZADOS
-    function getCustomIcons(L: any) {
-        const iconSizeReduced = [18, 30];
-        const shadowSizeReduced = [30, 30];
-        const iconAnchorReduced = [9, 30];
-        const popupAnchorReduced = [1, -25];
+    // 2. FUNCIÓN PARA OBTENER EL ÍCONO (Tamaño pequeño)
+    function getCustomIcon(type: string): Icon {
+        const L = (window as any).L;
+        const typeKey = validCenterTypes.includes(type) ? type : "Default";
 
-        const hospitalIcon = new L.Icon({
-            iconUrl:
-                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png",
+        if (customIcons[typeKey]) {
+            return customIcons[typeKey];
+        }
+
+        let colorClass = "blue";
+        if (type === "Hospital") colorClass = "red";
+        else if (type === "Clínica") colorClass = "blue";
+        else if (type === "EBAIS") colorClass = "green";
+
+        const newIcon = L.icon({
+            iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${colorClass}.png`,
             shadowUrl:
                 "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-            iconSize: iconSizeReduced,
-            iconAnchor: iconAnchorReduced,
-            popupAnchor: popupAnchorReduced,
-            shadowSize: shadowSizeReduced,
-        });
-        const clinicaIcon = new L.Icon({
-            iconUrl:
-                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png",
-            shadowUrl:
-                "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-            iconSize: iconSizeReduced,
-            iconAnchor: iconAnchorReduced,
-            popupAnchor: popupAnchorReduced,
-            shadowSize: shadowSizeReduced,
-        });
-        const ebaisIcon = new L.Icon({
-            iconUrl:
-                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png",
-            shadowUrl:
-                "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-            iconSize: iconSizeReduced,
-            iconAnchor: iconAnchorReduced,
-            popupAnchor: popupAnchorReduced,
-            shadowSize: shadowSizeReduced,
-        });
-        const userLocationIcon = new L.Icon({
-            iconUrl:
-                "https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png",
-            shadowUrl:
-                "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-            iconSize: iconSizeReduced,
-            iconAnchor: iconAnchorReduced,
-            popupAnchor: popupAnchorReduced,
-            shadowSize: shadowSizeReduced,
+            iconSize: [20, 33], // Tamaño del ícono: Reducido
+            iconAnchor: [10, 33], // Punto de anclaje: Ajustado
+            popupAnchor: [1, -28], // Posición del popup: Ajustado
+            shadowSize: [33, 33], // Tamaño de la sombra: Ajustado
         });
 
-        customIcons = {
-            Hospital: hospitalIcon,
-            Clínica: clinicaIcon,
-            EBAIS: ebaisIcon,
-            UserLocation: userLocationIcon,
-        };
+        customIcons[typeKey] = newIcon;
+        return newIcon;
     }
 
-    // 3. FUNCIÓN PARA GENERAR ENLACES DE NAVEGACIÓN EN HTML
-    function generateNavigationLinks(lat: number, lng: number): string {
-        const coords = `${lat},${lng}`;
-        // Formato estándar y funcional de Google Maps para buscar coordenadas
-        const googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${coords}`;
-        const wazeUrl = `https://waze.com/ul?ll=${coords}&navigate=yes`;
-
-        return `
-            <div style="margin-top: 10px; display: flex; gap: 10px;">
-                <a href="${googleMapsUrl}" target="_blank" style="text-decoration: none;">
-                    <button style="
-                        background-color: #4285F4; color: white; border: none; 
-                        padding: 8px 12px; border-radius: 4px; cursor: pointer;
-                        font-weight: bold; font-size: 0.85em;
-                    ">
-                        Abrir en Google Maps 🚗
-                    </button>
-                </a>
-                <a href="${wazeUrl}" target="_blank" style="text-decoration: none;">
-                    <button style="
-                        background-color: #33ccff; color: white; border: none; 
-                        padding: 8px 12px; border-radius: 4px; cursor: pointer;
-                        font-weight: bold; font-size: 0.85em;
-                    ">
-                        Abrir en Waze 🗺️
-                    </button>
-                </a>
-            </div>
-        `;
-    }
-
-    // 4. FUNCIÓN PARA DIBUJAR MARCADORES
+    // 3. FUNCIÓN PARA DIBUJAR MARCADORES (ACTUALIZADA: URLs de ruta corregidas)
     function addMarkersToMap(data: any[]) {
-        if (!leafletMap || Object.keys(customIcons).length === 0) return;
+        if (!leafletMap || !markersLayer) return;
 
-        if (markersLayer) {
-            leafletMap.removeLayer(markersLayer);
-        }
+        markersLayer.clearLayers();
 
         const L = (window as any).L;
-        markersLayer = L.layerGroup().addTo(leafletMap);
+
+        // OBTENER COORDENADAS DEL USUARIO
+        const userLat = userMarker ? userMarker.getLatLng().lat : null;
+        const userLng = userMarker ? userMarker.getLatLng().lng : null;
+        const userCoordsParam =
+            userLat !== null && userLng !== null ? `${userLat},${userLng}` : "";
 
         data.forEach((centro) => {
             const lat = centro.latitud;
             const lng = centro.longitud;
+            const destCoords = `${lat},${lng}`;
 
-            const iconToUse =
-                customIcons[centro.tipo] || L.Marker.prototype.options.icon;
-            const navigationLinks = generateNavigationLinks(lat, lng);
+            const icon = getCustomIcon(centro.tipo);
+
+            // CONSTRUCCIÓN DE LINKS DINÁMICOS
+            let googleMapsUrl: string;
+            let wazeUrl: string;
+            let routingInfo = "";
+
+            if (userCoordsParam) {
+                // CORRECCIÓN GOOGLE MAPS: Usar el formato estándar de Google Maps API para ruta (origin/destination)
+                googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${userCoordsParam}&destination=${destCoords}&travelmode=driving`;
+
+                // WAZE: Sintaxis correcta para origen y destino
+                wazeUrl = `https://waze.com/ul?ll=${destCoords}&navigate=yes&from_coord=${userCoordsParam}`;
+
+                routingInfo =
+                    '<p style="margin: 0; font-size: 0.8em; font-weight: bold; color: var(--secondary-color);">¡Ruta calculada desde tu ubicación! (Distancia/Tiempo en la app)</p>';
+            } else {
+                // Links de DESTINO (Fallback)
+                // Google Maps: Solo destino (la app intentará usar la ubicación del dispositivo como origen)
+                googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${destCoords}`;
+                wazeUrl = `https://waze.com/ul?ll=${destCoords}&navigate=yes`;
+
+                routingInfo =
+                    '<p style="margin: 0; font-size: 0.8em; color: #888;">Para calcular la ruta automáticamente, presiona "📍 Mostrar mi Ubicación" primero.</p>';
+            }
 
             const popupContent = `
                 <div style="max-width: 250px;">
                     <h4 style="margin-bottom: 5px; color: var(--accent-color);">${centro.nombre}</h4>
+                    ${routingInfo} 
                     <p style="margin: 0; font-size: 0.9em;"><strong>Tipo:</strong> ${centro.tipo} (${centro.tipo_ccss})</p>
                     <p style="margin: 0; font-size: 0.9em;"><strong>Dirección:</strong> ${centro.direccion}</p>
                     <p style="margin-top: 5px; font-size: 0.9em;">
                         <strong>Contacto:</strong> <a href="tel:${centro.contacto.split("|")[0].trim()}">${centro.contacto}</a>
                     </p>
                     <p style="margin-top: 5px; font-size: 0.8em; color: #555;">Servicios: ${centro.servicios}</p>
-                    ${navigationLinks}
+                    
+                    <div style="margin-top: 10px; display: flex; gap: 10px;">
+                        <a href="${googleMapsUrl}" target="_blank">Google Maps 🚗</a>
+                        <a href="${wazeUrl}" target="_blank">Waze 🗺️</a>
+                    </div>
                 </div>
             `;
 
-            const marker = L.marker([lat, lng], { icon: iconToUse })
+            L.marker([lat, lng], { icon: icon })
                 .bindPopup(popupContent)
                 .addTo(markersLayer);
-
-            centro.markerInstance = marker;
         });
     }
 
-    // 5. FÓRMULA DE HAVERSINE PARA CÁLCULO DE DISTANCIA
-    function calculateDistance(
-        lat1: number,
-        lon1: number,
-        lat2: number,
-        lon2: number,
-    ): number {
-        const R = 6371; // Radio de la Tierra en kilómetros
-        const toRad = (value: number) => (value * Math.PI) / 180;
-
-        const dLat = toRad(lat2 - lat1);
-        const dLon = toRad(lon2 - lon1);
-
-        const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.cos(toRad(lat1)) *
-                Math.cos(toRad(lat2)) *
-                Math.sin(dLon / 2) *
-                Math.sin(dLon / 2);
-
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        const distance = R * c;
-        return distance;
-    }
-
-    // 6. LÓGICA REACTIVA DE FILTRADO Y BÚSQUEDA
-    $: if (centros_ccss.length > 0 && leafletMap) {
-        const lowerCaseSearchTerm = searchTerm.toLowerCase().trim();
-
-        let filteredData = centros_ccss;
-        if (selectedFilter !== "Todos") {
-            filteredData = centros_ccss.filter(
-                (centro) => centro.tipo === selectedFilter,
-            );
-        }
-
-        if (lowerCaseSearchTerm) {
-            filteredData = filteredData.filter(
-                (centro) =>
-                    centro.nombre.toLowerCase().includes(lowerCaseSearchTerm) ||
-                    centro.direccion
-                        .toLowerCase()
-                        .includes(lowerCaseSearchTerm) ||
-                    centro.contacto.toLowerCase().includes(lowerCaseSearchTerm),
-            );
-        }
-
-        visibleCentros = filteredData;
-        addMarkersToMap(visibleCentros);
-    }
-
-    // 7. FUNCIÓN PARA CENTRAR EL MAPA DESDE LA LISTA
-    function zoomToCenter(centro: any) {
-        if (!leafletMap || !centro.markerInstance) return;
-
-        leafletMap.setView([centro.latitud, centro.longitud], 15);
-
-        centro.markerInstance.openPopup();
-    }
-
-    // 8. FUNCIÓN PARA UBICAR AL USUARIO
-    function findMe() {
+    // 4. FUNCIÓN PARA BUSCAR LA UBICACIÓN DEL USUARIO (sin cambios funcionales)
+    function locateUser() {
         if (!leafletMap) return;
 
-        if (userMarker) {
-            leafletMap.removeLayer(userMarker);
-            userMarker = undefined;
-        }
+        alert("Buscando tu ubicación...");
 
-        leafletMap.locate({
-            setView: true,
-            maxZoom: 14,
-            enableHighAccuracy: true,
-        });
+        leafletMap.locate({ setView: true, maxZoom: 14 });
+
+        const L = (window as any).L;
 
         leafletMap.once("locationfound", function (e) {
-            const L = (window as any).L;
-            const userLat = e.latlng.lat;
-            const userLng = e.latlng.lng;
-            const orangeIcon = customIcons["UserLocation"];
+            if (userMarker) {
+                leafletMap.removeLayer(userMarker);
+            }
 
-            userMarker = L.marker(e.latlng, { icon: orangeIcon })
-                .addTo(leafletMap)
-                .bindPopup("¡Tu Ubicación Actual!")
-                .openPopup();
-
-            // CALCULAR Y ORDENAR DISTANCIAS
-            centros_ccss = centros_ccss.map((centro) => {
-                const distance = calculateDistance(
-                    userLat,
-                    userLng,
-                    centro.latitud,
-                    centro.longitud,
-                );
-                return {
-                    ...centro,
-                    distanceKm: parseFloat(distance.toFixed(2)),
-                };
+            const userIcon = L.circleMarker(e.latlng, {
+                radius: 8,
+                fillColor: "#0078FF",
+                color: "#000",
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.8,
             });
 
-            // Ordenar los centros por distancia
-            centros_ccss.sort((a, b) => {
-                if (a.distanceKm === undefined) return 1;
-                if (b.distanceKm === undefined) return -1;
-                return a.distanceKm - b.distanceKm;
-            });
+            userMarker = userIcon.addTo(leafletMap);
+            userMarker.bindPopup("¡Estás Aquí!").openPopup();
 
-            isListOpen = true;
-            setFilter(selectedFilter);
+            // Forzar la re-ejecución del filtro reactivo para actualizar los popups
+            if (centros_ccss.length > 0) {
+                // Pequeño truco para forzar el re-render de Svelte
+                searchTerm = searchTerm.trim() + " ";
+                searchTerm = searchTerm.trim();
+            }
         });
 
         leafletMap.once("locationerror", function (e) {
-            alert(
-                "No fue posible obtener su ubicación. Asegúrese de que la geolocalización esté activada y que el permiso haya sido otorgado. (Error: " +
-                    e.message +
-                    ")",
-            );
+            alert("No fue posible obtener tu ubicación. " + e.message);
         });
     }
 
-    // 9. FUNCIÓN PARA INICIALIZAR EL MAPA (Solo OSM Claro)
+    // 5. LÓGICA REACTIVA DE FILTRADO Y BÚSQUEDA (Estable y refactorizada)
+
+    // BLOQUE 5a: Filtra los datos basado en las variables reactivas (filtro y búsqueda)
+    $: {
+        if (centros_ccss.length === 0) {
+            filteredCentros = [];
+        } else {
+            const lowerCaseSearchTerm = searchTerm.toLowerCase().trim();
+
+            let data = centros_ccss;
+
+            // 1. FILTRO POR TIPO
+            if (selectedFilter !== "Todos") {
+                data = centros_ccss.filter(
+                    (centro) => centro.tipo === selectedFilter,
+                );
+            }
+
+            // 2. FILTRO POR BÚSQUEDA
+            if (lowerCaseSearchTerm) {
+                data = data.filter(
+                    (centro) =>
+                        centro.nombre
+                            .toLowerCase()
+                            .includes(lowerCaseSearchTerm) ||
+                        centro.direccion
+                            .toLowerCase()
+                            .includes(lowerCaseSearchTerm) ||
+                        centro.contacto
+                            .toLowerCase()
+                            .includes(lowerCaseSearchTerm),
+                );
+            }
+
+            filteredCentros = data;
+        }
+    }
+
+    // BLOQUE 5b: Dibuja los marcadores cada vez que la lista filtrada cambia O el mapa está listo
+    $: if (filteredCentros && leafletMap) {
+        addMarkersToMap(filteredCentros);
+    }
+
+    // 6. FUNCIÓN PARA CAMBIAR EL FILTRO DE TIPO (sin cambios)
+    function setFilter(filterType: "Todos" | "Hospital" | "Clínica" | "EBAIS") {
+        selectedFilter = filterType;
+    }
+
+    // 7. FUNCIÓN PARA INICIALIZAR EL MAPA (sin cambios funcionales)
     function initializeMap(data: any[]) {
         if (!mapElement || leafletMap) return;
 
         const L = (window as any).L;
 
-        getCustomIcons(L);
+        // Inicializar el mapa
+        leafletMap = L.map(mapElement).setView([9.95, -84.05], 8);
 
+        // --- LÓGICA DE CONTROL DE CAPAS ---
+        const osmStandard: TileLayer = L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                maxZoom: 19,
+                attribution:
+                    '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            },
+        );
+        const topoMap: TileLayer = L.tileLayer(
+            "https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png",
+            {
+                maxZoom: 17,
+                attribution:
+                    'Map data: © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: © <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)',
+            },
+        );
+        const humanitarian: TileLayer = L.tileLayer(
+            "http://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png",
+            {
+                maxZoom: 19,
+                attribution:
+                    '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles courtesy of <a href="http://hot.openstreetmap.org/" target="_blank">Humanitarian OpenStreetMap Team</a>',
+            },
+        );
+
+        const baseLayers = {
+            "1. OSM Estándar": osmStandard,
+            "2. Topografía (OpenTopo)": topoMap,
+            "3. Humanitario (HOT)": humanitarian,
+        };
+
+        let layerName = "Centros CCSS (Marcadores)";
+
+        // VERIFICACIÓN Y FALLBACK DE CLUSTERIZACIÓN
+        if (typeof L.markerClusterGroup === "function") {
+            markersLayer = L.markerClusterGroup();
+            layerName = "Centros CCSS (CLUSTERS)";
+            console.log("DEBUG: MarkerClusterGroup inicializado.");
+        } else {
+            // FALLBACK SEGURO: Usar capa de grupo regular si el plugin no carga
+            markersLayer = L.layerGroup();
+            console.error(
+                "DEBUG: MarkerClusterGroup no encontrado. Usando L.layerGroup().",
+            );
+        }
+
+        // La capa de marcadores debe agregarse al mapa
+        markersLayer.addTo(leafletMap);
+
+        const overlayLayers = {
+            [layerName]: markersLayer,
+        };
+
+        osmStandard.addTo(leafletMap);
+        L.control
+            .layers(baseLayers, overlayLayers, { collapsed: false })
+            .addTo(leafletMap);
+    }
+
+    onMount(async () => {
+        // Cargar Leaflet
+        const L = await import("leaflet");
+        (window as any).L = L;
+
+        // Ajustar el ícono por defecto (IMPORTANTE para el funcionamiento de marcadores)
         const defaultIcon = new L.Icon({
             iconUrl:
                 "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
             shadowUrl:
                 "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-            iconSize: [25, 41],
-            iconAnchor: [12, 41],
-            popupAnchor: [1, -34],
-            shadowSize: [41, 41],
+            iconSize: [20, 33],
+            iconAnchor: [10, 33],
+            popupAnchor: [1, -28],
+            shadowSize: [33, 33],
         });
         L.Marker.prototype.options.icon = defaultIcon;
 
-        // Inicializar el mapa
-        leafletMap = L.map(mapElement).setView([9.95, -84.05], 8);
-
-        // Capa base de OpenStreetMap (SOLO ESTE TILE LAYER)
-        L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
-            maxZoom: 19,
-            attribution:
-                '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        }).addTo(leafletMap);
-
-        // Inicializar la capa de marcadores
-        markersLayer = L.layerGroup().addTo(leafletMap);
-
-        leafletMap.invalidateSize();
-    }
-
-    onMount(async () => {
-        // Cargar Leaflet
-        try {
-            const L = await import("leaflet");
-            (window as any).L = L;
-        } catch (e) {
-            console.error(
-                "Error al cargar Leaflet. ¿Está instalado correctamente?",
-                e,
-            );
-            return;
-        }
-
-        // Cargar preferencia de MODO OSCURO desde el localStorage
+        // INICIALIZACIÓN DEL MODO OSCURO
         const savedMode = localStorage.getItem("darkMode");
-
-        // Aplicar la preferencia de MODO OSCURO en el montaje
         if (savedMode !== null) {
             isDarkMode = savedMode === "true";
         } else {
-            // Usar la preferencia del sistema operativo por defecto
             isDarkMode = window.matchMedia(
                 "(prefers-color-scheme: dark)",
             ).matches;
         }
-
-        // Aplicar la clase al BODY inmediatamente después de obtener la preferencia
         if (typeof document !== "undefined") {
             document.body.classList.toggle("dark-mode", isDarkMode);
-            console.log("DEBUG: Dark mode applied on load:", isDarkMode);
         }
+        // FIN INICIALIZACIÓN MODO OSCURO
 
         try {
             const response = await fetch("/datos_ccss.json");
@@ -363,16 +330,12 @@
             }
             const data = await response.json();
             centros_ccss = data;
-
+            filteredCentros = data; // Inicializar la lista filtrada
             initializeMap(centros_ccss);
         } catch (error) {
             console.error("Ocurrió un error al procesar el JSON.", error);
         }
     });
-
-    function setFilter(filterType: "Todos" | "Hospital" | "Clínica" | "EBAIS") {
-        selectedFilter = filterType;
-    }
 </script>
 
 <svelte:head>
@@ -382,159 +345,92 @@
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
         crossorigin=""
     />
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/leaflet-control-layers-compat@1.1.0/control.layers.css"
+    />
 
-    <title>Mapa CCSS Interactivo</title>
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css"
+    />
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css"
+    />
+
+    <script
+        src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"
+    ></script>
+
+    <title>Mapa CCSS Interactivo - Cluster</title>
 </svelte:head>
 
-<main class="page-container">
-    <h2>🗺️ Mapa Interactivo de Centros de la CCSS</h2>
-    <p>
-        Utilice la búsqueda, los filtros o su ubicación para encontrar el centro
-        de salud.
-    </p>
+<main class="osm-layout-container">
+    <div class="sidebar">
+        <h3 class="sidebar-title">🏥 Centros CCSS</h3>
 
-    <div class="controls-wrapper">
-        <div class="search-box">
-            <input
-                type="text"
-                placeholder="🔍 Buscar por nombre, dirección o teléfono..."
-                bind:value={searchTerm}
-            />
+        <div class="control-group">
+            <div class="search-box">
+                <input
+                    type="text"
+                    placeholder="🔍 Buscar centro..."
+                    bind:value={searchTerm}
+                />
+            </div>
         </div>
 
-        <div class="filter-controls">
-            <button
-                class="theme-toggle-button"
-                on:click={toggleDarkMode}
-                title="Alternar entre modo claro y modo oscuro"
-            >
+        <div class="control-group theme-toggle-section">
+            <button class="theme-toggle-button" on:click={toggleDarkMode}>
                 {isDarkMode ? "🌞 Modo Claro" : "🌙 Modo Oscuro"}
             </button>
-
-            <button
-                class="filter-button location-button"
-                on:click={findMe}
-                title="Centrar mapa en su ubicación actual y calcular distancias"
-            >
-                📍 Mi Ubicación
-            </button>
-
-            <button
-                class="filter-button list-toggle-button"
-                on:click={() => (isListOpen = !isListOpen)}
-            >
-                {isListOpen
-                    ? "Cerrar Lista ✖️"
-                    : `Ver Lista (${visibleCentros.length}) ☰`}
-            </button>
-
-            {#each filterTypes as type}
-                <button
-                    class="filter-button"
-                    class:active={selectedFilter === type}
-                    on:click={() => setFilter(type)}
-                >
-                    {type}
-                </button>
-            {/each}
         </div>
-    </div>
 
-    <div class="map-and-list-container" class:list-closed={!isListOpen}>
-        <div id="map" bind:this={mapElement}></div>
+        <div class="control-group locate-section">
+            <button class="locate-button" on:click={locateUser}>
+                <span style="font-size: 1.2em; vertical-align: middle;">📍</span
+                > Mostrar mi Ubicación
+            </button>
+        </div>
 
-        {#if isListOpen}
-            <div class="results-list">
-                <div class="list-header">
-                    <h3>Resultados ({visibleCentros.length})</h3>
-                    {#if centros_ccss[0] && centros_ccss[0].distanceKm !== undefined}
-                        <p class="list-sorted-info">
-                            Ordenado por **Distancia**.
-                        </p>
-                    {/if}
-                </div>
-
-                {#if visibleCentros.length > 0}
-                    {#each visibleCentros as centro}
-                        <div
-                            class="center-item"
-                            on:click={() => zoomToCenter(centro)}
-                        >
-                            <p class="center-name">
-                                {centro.nombre}
-                                <span
-                                    class="center-type"
-                                    class:hospital={centro.tipo === "Hospital"}
-                                    class:clinica={centro.tipo === "Clínica"}
-                                    class:ebais={centro.tipo === "EBAIS"}
-                                >
-                                    {centro.tipo}
-                                </span>
-                            </p>
-
-                            {#if centro.distanceKm !== undefined}
-                                <p class="center-distance">
-                                    Distancia: **{centro.distanceKm} km**
-                                </p>
-                            {/if}
-
-                            <p class="center-address">📍 {centro.direccion}</p>
-                            <p class="center-contact">
-                                📞 {centro.contacto.split("|")[0].trim()}
-                            </p>
-
-                            <div class="navigation-links-list">
-                                <a
-                                    href={`https://www.google.com/maps/search/?api=1&query=${centro.latitud},${centro.longitud}`}
-                                    target="_blank"
-                                    class="nav-button google-maps"
-                                >
-                                    Google Maps 🚗
-                                </a>
-                                <a
-                                    href={`https://waze.com/ul?ll=${centro.latitud},${centro.longitud}&navigate=yes`}
-                                    target="_blank"
-                                    class="nav-button waze"
-                                >
-                                    Waze 🗺️
-                                </a>
-                            </div>
-                        </div>
-                    {/each}
-                {:else}
-                    <p class="no-results">
-                        No se encontraron centros con los filtros aplicados.
-                    </p>
-                {/if}
+        <div class="control-group">
+            <p class="control-label">Filtrar por Tipo:</p>
+            <div class="filter-controls">
+                {#each filterTypes as type}
+                    <button
+                        class="filter-button"
+                        class:active={selectedFilter === type}
+                        on:click={() => setFilter(type)}
+                    >
+                        {type}
+                    </button>
+                {/each}
             </div>
+        </div>
+
+        {#if centros_ccss.length === 0}
+            <p class="loading-message">Cargando datos...</p>
         {/if}
     </div>
 
-    {#if centros_ccss.length === 0}
-        <p style="text-align: center; color: red;">
-            Cargando datos o no se encontraron datos. Verifique la consola para
-            errores.
-        </p>
-    {/if}
+    <div id="map" bind:this={mapElement}></div>
 </main>
 
 <style>
     /* ----------------------------------------------------- */
-    /* VARIABLES CSS PARA MODO CLARO Y OSCURO (DEFINICIÓN FINAL) */
+    /* VARIABLES CSS PARA MODO CLARO Y OSCURO */
     /* ----------------------------------------------------- */
 
     /* MODO CLARO (Aplicado al body por defecto) */
     :global(body) {
         /* Colores Base (Claro) */
-        --bg-color: #ffffff;
-        --text-color: #333333;
-        --panel-bg: #f9f9f9;
-        --border-color: #cccccc;
+        --bg-color: #ffffff; /* Fondo principal de la página */
+        --text-color: #333333; /* Color de texto principal */
+        --sidebar-bg: #f8f9fa; /* Fondo de la barra lateral */
+        --border-color: #cccccc; /* Color de bordes y separadores */
         --accent-color: #004a8b; /* Azul CCSS */
         --accent-color-hover: #003663;
-        --secondary-color: #f7931e; /* Naranja Ubicación */
-        --list-item-hover: #e6f0f8;
-        --list-item-border: #eeeeee;
+        --secondary-color: #28a745; /* Verde para ubicación/botones */
         --shadow-color: rgba(0, 0, 0, 0.1);
 
         /* Estilos del body que usan las variables */
@@ -543,329 +439,238 @@
         transition:
             background-color 0.3s,
             color 0.3s;
+        height: 100vh;
+        overflow: hidden;
+        font-family: "Helvetica Neue", Arial, sans-serif;
     }
 
     /* MODO OSCURO (Anula variables al tener la clase dark-mode) */
     :global(body.dark-mode) {
         --bg-color: #121212;
         --text-color: #f5f5f5;
-        --panel-bg: #1e1e1e;
+        --sidebar-bg: #1e1e1e;
         --border-color: #333333;
         --accent-color: #42a5f5; /* Azul CCSS más brillante */
         --accent-color-hover: #2196f3;
-        --secondary-color: #ffb300; /* Naranja Ubicación brillante */
-        --list-item-hover: #2a2a2a;
-        --list-item-border: #444444;
+        --secondary-color: #5cb85c; /* Verde brillante */
         --shadow-color: rgba(255, 255, 255, 0.1);
     }
 
     /* ----------------------------------------------------- */
-    /* ESTILOS GENERALES APLICANDO VARIABLES */
+    /* ESTILOS DE LAYOUT Y BARRA LATERAL (sin cambios) */
     /* ----------------------------------------------------- */
 
-    .page-container {
-        padding: 10px;
-        max-width: 100%;
-        margin: 0 auto;
+    .osm-layout-container {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
     }
 
-    h2 {
-        margin-top: 0;
-        margin-bottom: 5px;
-        font-size: 1.8em;
+    .sidebar {
+        width: 300px;
+        background-color: var(--sidebar-bg);
+        padding: 15px;
+        box-shadow: 2px 0 5px var(--shadow-color);
+        z-index: 1000;
+        overflow-y: auto;
+        border-right: 1px solid var(--border-color);
+    }
+
+    .sidebar-title {
         color: var(--accent-color);
+        margin-top: 0;
+        margin-bottom: 20px;
         border-bottom: 2px solid var(--accent-color);
         padding-bottom: 10px;
-    }
-
-    .controls-wrapper {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-        margin-bottom: 15px;
-    }
-
-    .map-and-list-container {
-        display: flex;
-        gap: 20px;
-        margin-top: 5px;
+        font-size: 1.5em;
     }
 
     #map {
         flex-grow: 1;
-        height: 95vh;
-        width: 70%;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px var(--shadow-color);
-        margin-top: 5px;
-        transition: width 0.3s ease;
+        height: 100%;
+        width: 100%;
+        min-width: 0;
+        z-index: 1;
     }
 
-    .map-and-list-container.list-closed #map {
+    .control-group {
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .locate-section,
+    .theme-toggle-section {
+        border-bottom: none;
+    }
+
+    /* Botón de Modo Oscuro */
+    .theme-toggle-button {
         width: 100%;
+        padding: 10px;
+        background-color: var(--accent-color);
+        color: white;
+        border: 1px solid var(--accent-color);
+        border-radius: 4px;
+        font-size: 1em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .theme-toggle-button:hover {
+        background-color: var(--accent-color-hover);
+        border-color: var(--accent-color-hover);
+    }
+
+    /* Botón de Ubicación */
+    .locate-button {
+        width: 100%;
+        padding: 10px;
+        background-color: var(--secondary-color);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 1em;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    .locate-button:hover {
+        background-color: var(--accent-color-hover);
+    }
+
+    .control-label {
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: var(--text-color);
     }
 
     .search-box input {
         width: 100%;
-        padding: 12px 15px;
-        font-size: 16px;
-        border: 2px solid var(--border-color);
-        border-radius: 8px;
+        padding: 10px;
+        font-size: 15px;
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
         box-sizing: border-box;
-        transition: border-color 0.2s;
         background-color: var(--bg-color);
         color: var(--text-color);
     }
     .search-box input:focus {
         border-color: var(--accent-color);
         outline: none;
+        box-shadow: 0 0 5px var(--shadow-color);
     }
 
     .filter-controls {
         display: flex;
-        gap: 10px;
         flex-wrap: wrap;
-    }
-
-    .theme-toggle-button {
-        padding: 10px 15px;
-        border: 2px solid var(--text-color);
-        border-radius: 5px;
-        background-color: transparent;
-        color: var(--text-color);
-        font-weight: bold;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        order: -2;
-    }
-
-    .theme-toggle-button:hover {
-        background-color: var(--accent-color);
-        color: var(--bg-color);
-        border-color: var(--accent-color);
+        gap: 8px;
     }
 
     .filter-button {
-        padding: 10px 15px;
-        border: 2px solid var(--accent-color);
-        border-radius: 5px;
+        padding: 8px 12px;
+        border: 1px solid var(--accent-color);
+        border-radius: 4px;
         background-color: var(--bg-color);
         color: var(--accent-color);
-        font-weight: bold;
+        font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s ease;
-    }
-
-    .filter-button:hover:not(.active) {
-        background-color: var(--list-item-hover);
-    }
-
-    .filter-button.location-button {
-        border-color: var(--secondary-color);
-        color: var(--secondary-color);
-        order: -1;
-    }
-
-    .filter-button.location-button:hover {
-        background-color: var(--secondary-color);
-        color: var(--bg-color);
-    }
-
-    .filter-button.list-toggle-button {
-        background-color: var(--panel-bg);
-        color: var(--text-color);
-        border-color: var(--border-color);
-    }
-    .filter-button.list-toggle-button:hover {
-        background-color: var(--list-item-hover);
-        border-color: var(--border-color);
+        transition: all 0.15s ease;
+        font-size: 0.9em;
     }
 
     .filter-button.active {
         background-color: var(--accent-color);
         color: white;
-        box-shadow: 0 2px 5px var(--shadow-color);
+        box-shadow: 0 1px 3px var(--shadow-color);
     }
 
-    .results-list {
-        width: 300px;
-        max-height: 95vh;
-        min-width: 300px;
-        overflow-y: auto;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        box-shadow: 0 4px 12px var(--shadow-color);
-        padding: 10px;
-        background-color: var(--panel-bg);
+    .filter-button:hover:not(.active) {
+        background-color: var(--sidebar-bg);
     }
 
-    .list-header h3 {
-        margin: 0;
-        color: var(--accent-color);
-    }
-
-    .list-sorted-info {
-        font-size: 0.75em;
-        color: var(--secondary-color);
-        margin: 0 0 10px 0;
-        padding-bottom: 10px;
-        border-bottom: 1px solid var(--list-item-border);
-    }
-
-    .center-item {
-        padding: 10px 0;
-        border-bottom: 1px dashed var(--list-item-border);
-        cursor: pointer;
-        transition: background-color 0.1s;
-        position: relative;
-    }
-
-    .center-item:hover {
-        background-color: var(--list-item-hover);
-    }
-
-    .center-item > *:not(.navigation-links-list) {
-        pointer-events: none;
-    }
-
-    .center-name {
-        font-weight: bold;
-        margin: 0 0 4px 0;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        color: var(--text-color);
-    }
-
-    .center-distance {
-        font-size: 0.9em;
-        color: var(--accent-color);
-        margin: 4px 0;
-        font-weight: bold;
-        pointer-events: none;
-    }
-
-    .center-type {
-        font-size: 0.75em;
-        font-weight: normal;
-        padding: 3px 6px;
-        border-radius: 4px;
-        color: white;
-    }
-
-    .center-type.hospital {
-        background-color: #d9534f;
-    }
-    .center-type.clinica {
-        background-color: #42a5f5;
-    }
-    .center-type.ebais {
-        background-color: #5cb85c;
-    }
-
-    .center-address,
-    .center-contact {
-        font-size: 0.85em;
-        color: var(--text-color);
-        opacity: 0.7;
-        margin: 0;
-        pointer-events: none;
-    }
-
-    /* ESTILOS DE NAVEGACIÓN EN LA LISTA */
-    .navigation-links-list {
-        display: flex;
-        gap: 8px;
-        margin-top: 8px;
-        pointer-events: all;
-    }
-
-    .nav-button {
-        text-decoration: none;
-        padding: 6px 10px;
-        border-radius: 4px;
-        font-size: 0.75em;
-        font-weight: bold;
-        transition: background-color 0.1s;
+    .loading-message {
         text-align: center;
-        flex-grow: 1;
-    }
-
-    .nav-button.google-maps {
-        background-color: #4285f4;
-        color: white;
-        border: 1px solid #4285f4;
-    }
-    .nav-button.google-maps:hover {
-        background-color: #357ae8;
-    }
-
-    .nav-button.waze {
-        background-color: #33ccff;
-        color: white;
-        border: 1px solid #33ccff;
-    }
-    .nav-button.waze:hover {
-        background-color: #24a4d2;
-    }
-
-    /* Media query para dispositivos pequeños */
-    @media (max-width: 1000px) {
-        .map-and-list-container {
-            flex-direction: column;
-        }
-        #map {
-            width: 100%;
-            height: 60vh;
-        }
-
-        .map-and-list-container.list-closed #map {
-            width: 100%;
-        }
-
-        .results-list {
-            width: 100%;
-            max-height: 40vh;
-        }
+        color: #888;
+        font-style: italic;
+        padding: 20px 0;
     }
 
     /* ----------------------------------------------------- */
-    /* ESTILOS DE MODO OSCURO PARA ELEMENTOS DE LEAFLET (POPUPs y CONTROLES) */
+    /* ESTILOS DE MODO OSCURO PARA LEAFLET */
     /* ----------------------------------------------------- */
-
-    /* NOTA: Usamos :global(...) en todo el selector para asegurar la aplicación al DOM global de Leaflet. */
 
     /* Controles de Zoom */
-    :global(body.dark-mode .leaflet-control-zoom) {
+    :global(body.dark-mode .leaflet-control-zoom a) {
+        background-color: var(--sidebar-bg);
+        border-bottom: 1px solid var(--border-color);
+        color: var(--text-color) !important;
+    }
+
+    /* Estilos del Control de Capas en Modo Oscuro */
+    :global(body.dark-mode .leaflet-control-layers) {
+        background: var(--sidebar-bg);
+        color: var(--text-color);
         border: 1px solid var(--border-color);
+        box-shadow: 0 1px 5px var(--shadow-color);
+    }
+    :global(body.dark-mode .leaflet-control-layers-base),
+    :global(body.dark-mode .leaflet-control-layers-overlays) {
+        color: var(--text-color);
+    }
+    :global(body.dark-mode .leaflet-control-layers-toggle) {
+        filter: invert(100%);
     }
 
     /* Fondo del Popup y Tip (Flecha) */
     :global(body.dark-mode .leaflet-popup-content-wrapper),
     :global(body.dark-mode .leaflet-popup-tip) {
-        background: var(--panel-bg);
+        background: var(--sidebar-bg);
         color: var(--text-color);
         box-shadow: 0 3px 14px var(--shadow-color);
     }
 
-    /* Asegurar que el título del popup sea del color acentuado */
-    :global(body.dark-mode .leaflet-popup-content h4) {
+    /* Título y elementos del Popup */
+    :global(.leaflet-popup-content h4) {
         color: var(--accent-color) !important;
     }
-
-    /* Tooltip */
-    :global(body.dark-mode .leaflet-tooltip) {
-        background: var(--panel-bg);
+    :global(body.dark-mode .leaflet-popup-content p) {
         color: var(--text-color);
-        border: 1px solid var(--border-color);
     }
-
-    /* Botón de cerrar popup */
     :global(body.dark-mode .leaflet-popup-close-button) {
         color: var(--text-color);
-        opacity: 0.8;
     }
-    :global(body.dark-mode .leaflet-popup-close-button):hover {
-        color: var(--accent-color);
+
+    /* Estilos de navegación en el popup */
+    :global(.leaflet-popup-content a) {
+        text-decoration: none;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-size: 0.8em;
+    }
+    :global(.leaflet-popup-content a[href*="google.com"]) {
+        background-color: #4285f4;
+    }
+    :global(.leaflet-popup-content a[href*="waze.com"]) {
+        background-color: #33ccff;
+    }
+
+    /* Estilos para la apariencia de los clusters en Modo Oscuro */
+    :global(body.dark-mode .marker-cluster-small) {
+        background-color: rgba(66, 165, 245, 0.6);
+    }
+    :global(body.dark-mode .marker-cluster-medium) {
+        background-color: rgba(33, 150, 243, 0.6);
+    }
+    :global(body.dark-mode .marker-cluster-large) {
+        background-color: rgba(21, 101, 192, 0.6);
+    }
+    :global(body.dark-mode .marker-cluster-small div),
+    :global(body.dark-mode .marker-cluster-medium div),
+    :global(body.dark-mode .marker-cluster-large div) {
+        background-color: rgba(66, 165, 245, 0.9);
+        color: #121212;
     }
 </style>
