@@ -1,28 +1,97 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import type { Map, Marker, Icon, TileLayer } from "leaflet";
+    import type {
+        Map,
+        Marker,
+        Icon,
+        TileLayer,
+        LatLngBoundsExpression,
+        LatLngExpression,
+    } from "leaflet";
 
     // 1. VARIABLES DE ESTADO
     let centros_ccss: any[] = [];
     let selectedFilter: "Todos" | "Hospital" | "Clínica" | "EBAIS" = "Todos";
     let searchTerm: string = "";
 
-    // Variable reactiva para almacenar los centros filtrados
+    // Contendrá los centros filtrados, con la distancia calculada y ordenados
     let filteredCentros: any[] = [];
 
     let mapElement: HTMLDivElement;
     let leafletMap: Map | undefined;
 
-    // El tipo es 'any' ya que L.markerClusterGroup no es un tipo estándar de Leaflet
     let markersLayer: any | undefined;
 
     let userMarker: Marker | undefined;
     let customIcons: { [key: string]: Icon } = {};
 
     let isDarkMode: boolean = false;
+    // Bandera para el modo de selección manual de ubicación
+    let isAwaitingManualLocation: boolean = false;
+
+    // SE HAN ELIMINADO: countdownTimer y timerInterval
+    // SE HA ELIMINADO: clearLocationTimer()
 
     const filterTypes = ["Todos", "Hospital", "Clínica", "EBAIS"];
     const validCenterTypes = ["Hospital", "Clínica", "EBAIS"];
+
+    // --- FUNCIÓN DE CÁLCULO DE DISTANCIA (Haversine) ---
+    function toRad(Value: number) {
+        return (Value * Math.PI) / 180;
+    }
+
+    function haversineDistance(
+        lat1: number,
+        lon1: number,
+        lat2: number,
+        lon2: number,
+    ): string {
+        const R = 6371; // Radio de la Tierra en kilómetros
+        const dLat = toRad(lat2 - lat1);
+        const dLon = toRad(lon2 - lon1);
+        const a =
+            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.cos(toRad(lat1)) *
+                Math.cos(toRad(lat2)) *
+                Math.sin(dLon / 2) *
+                Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        const distance = R * c;
+
+        return distance.toFixed(2) + " km";
+    }
+    // --- FIN FUNCIONES DE DISTANCIA ---
+
+    // --- FUNCIÓN PARA AJUSTAR EL ZOOM AUTOMÁTICO (E) ---
+    function calculateAndFitBounds(data: any[]) {
+        if (!leafletMap || data.length === 0) {
+            return;
+        }
+
+        const L = (window as any).L;
+
+        const allPoints: LatLngBoundsExpression = data.map((centro) => [
+            centro.latitud,
+            centro.longitud,
+        ]);
+        if (userMarker) {
+            allPoints.push(userMarker.getLatLng());
+        }
+
+        if (allPoints.length === 0) return;
+
+        const bounds = L.latLngBounds(allPoints);
+
+        if (allPoints.length === 1) {
+            leafletMap.setView(allPoints[0], 12);
+        } else {
+            leafletMap.fitBounds(bounds, {
+                padding: [50, 50],
+                maxZoom: 12,
+            });
+        }
+    }
+    // --- FIN AJUSTE DE ZOOM ---
 
     // FUNCIÓN PARA ALTERNAR EL MODO OSCURO (sin cambios)
     function toggleDarkMode() {
@@ -35,7 +104,7 @@
         }
     }
 
-    // 2. FUNCIÓN PARA OBTENER EL ÍCONO (Tamaño pequeño)
+    // 2. FUNCIÓN PARA OBTENER EL ÍCONO (sin cambios)
     function getCustomIcon(type: string): Icon {
         const L = (window as any).L;
         const typeKey = validCenterTypes.includes(type) ? type : "Default";
@@ -53,17 +122,17 @@
             iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-${colorClass}.png`,
             shadowUrl:
                 "https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png",
-            iconSize: [20, 33], // Tamaño del ícono: Reducido
-            iconAnchor: [10, 33], // Punto de anclaje: Ajustado
-            popupAnchor: [1, -28], // Posición del popup: Ajustado
-            shadowSize: [33, 33], // Tamaño de la sombra: Ajustado
+            iconSize: [20, 33],
+            iconAnchor: [10, 33],
+            popupAnchor: [1, -28],
+            shadowSize: [33, 33],
         });
 
         customIcons[typeKey] = newIcon;
         return newIcon;
     }
 
-    // 3. FUNCIÓN PARA DIBUJAR MARCADORES (ACTUALIZADA: URLs de ruta corregidas)
+    // 3. FUNCIÓN PARA DIBUJAR MARCADORES
     function addMarkersToMap(data: any[]) {
         if (!leafletMap || !markersLayer) return;
 
@@ -71,7 +140,6 @@
 
         const L = (window as any).L;
 
-        // OBTENER COORDENADAS DEL USUARIO
         const userLat = userMarker ? userMarker.getLatLng().lat : null;
         const userLng = userMarker ? userMarker.getLatLng().lng : null;
         const userCoordsParam =
@@ -84,23 +152,33 @@
 
             const icon = getCustomIcon(centro.tipo);
 
-            // CONSTRUCCIÓN DE LINKS DINÁMICOS
             let googleMapsUrl: string;
             let wazeUrl: string;
             let routingInfo = "";
+            let distanceInfo = "";
 
-            if (userCoordsParam) {
-                // CORRECCIÓN GOOGLE MAPS: Usar el formato estándar de Google Maps API para ruta (origin/destination)
+            let distanceToDisplay = centro.distance_display;
+            if (!distanceToDisplay && userLat !== null && userLng !== null) {
+                distanceToDisplay = haversineDistance(
+                    userLat,
+                    userLng,
+                    lat,
+                    lng,
+                );
+            }
+
+            if (userCoordsParam && distanceToDisplay) {
+                distanceInfo = `<p style="margin: 5px 0 0; font-weight: bold;">Distancia Lineal: ${distanceToDisplay}</p>`;
+
+                // Formato de Google Maps: ?saddr=origen&daddr=destino
                 googleMapsUrl = `https://www.google.com/maps/dir/?api=1&origin=${userCoordsParam}&destination=${destCoords}&travelmode=driving`;
-
-                // WAZE: Sintaxis correcta para origen y destino
                 wazeUrl = `https://waze.com/ul?ll=${destCoords}&navigate=yes&from_coord=${userCoordsParam}`;
 
                 routingInfo =
-                    '<p style="margin: 0; font-size: 0.8em; font-weight: bold; color: var(--secondary-color);">¡Ruta calculada desde tu ubicación! (Distancia/Tiempo en la app)</p>';
+                    '<p style="margin: 0; font-size: 0.8em; font-weight: bold; color: var(--secondary-color);">¡Ruta calculada desde tu ubicación!</p>';
             } else {
-                // Links de DESTINO (Fallback)
-                // Google Maps: Solo destino (la app intentará usar la ubicación del dispositivo como origen)
+                distanceInfo = "";
+                // Solo destino si no hay origen
                 googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${destCoords}`;
                 wazeUrl = `https://waze.com/ul?ll=${destCoords}&navigate=yes`;
 
@@ -112,6 +190,7 @@
                 <div style="max-width: 250px;">
                     <h4 style="margin-bottom: 5px; color: var(--accent-color);">${centro.nombre}</h4>
                     ${routingInfo} 
+                    ${distanceInfo} 
                     <p style="margin: 0; font-size: 0.9em;"><strong>Tipo:</strong> ${centro.tipo} (${centro.tipo_ccss})</p>
                     <p style="margin: 0; font-size: 0.9em;"><strong>Dirección:</strong> ${centro.direccion}</p>
                     <p style="margin-top: 5px; font-size: 0.9em;">
@@ -128,58 +207,114 @@
 
             L.marker([lat, lng], { icon: icon })
                 .bindPopup(popupContent)
+                .bindTooltip(centro.nombre, {
+                    permanent: false,
+                    direction: "top",
+                })
                 .addTo(markersLayer);
         });
     }
 
-    // 4. FUNCIÓN PARA BUSCAR LA UBICACIÓN DEL USUARIO (sin cambios funcionales)
+    // --- FUNCIÓN CENTRAL: Establecer la ubicación del usuario ---
+    function setUserLocation(lat: number, lng: number) {
+        if (!leafletMap) return;
+
+        const L = (window as any).L;
+        const latlng: LatLngExpression = [lat, lng];
+
+        if (userMarker) {
+            leafletMap.removeLayer(userMarker);
+        }
+
+        const userIcon = L.circleMarker(latlng, {
+            radius: 8,
+            fillColor: "#0078FF",
+            color: "#000",
+            weight: 1,
+            opacity: 1,
+            fillOpacity: 0.8,
+        });
+
+        userMarker = userIcon.addTo(leafletMap);
+        userMarker
+            .bindPopup(`¡Estás Aquí! (${lat.toFixed(4)}, ${lng.toFixed(4)})`)
+            .openPopup();
+        leafletMap.setView(latlng, 14); // Centrar mapa en la nueva ubicación
+
+        isAwaitingManualLocation = false;
+        leafletMap.off("click", onMapClick); // Desactiva el modo de clic manual
+
+        if (centros_ccss.length > 0) {
+            // Activa el re-cálculo de la distancia
+            searchTerm = searchTerm.trim() + " ";
+            searchTerm = searchTerm.trim();
+        }
+    }
+
+    // --- FUNCIÓN DE FALLBACK: Manejar el clic en el mapa ---
+    function onMapClick(e: any) {
+        if (isAwaitingManualLocation && leafletMap) {
+            setUserLocation(e.latlng.lat, e.latlng.lng);
+            alert(
+                `¡Ubicación establecida manualmente en: ${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)}!`,
+            );
+        }
+    }
+
+    // 4. FUNCIÓN PARA BUSCAR LA UBICACIÓN DEL USUARIO (SIN CONTADOR)
     function locateUser() {
         if (!leafletMap) return;
 
-        alert("Buscando tu ubicación...");
+        // Alerta informativa
+        alert("Buscando tu ubicación... Esto puede tardar hasta 15 segundos.");
 
-        leafletMap.locate({ setView: true, maxZoom: 14 });
-
-        const L = (window as any).L;
-
-        leafletMap.once("locationfound", function (e) {
-            if (userMarker) {
-                leafletMap.removeLayer(userMarker);
-            }
-
-            const userIcon = L.circleMarker(e.latlng, {
-                radius: 8,
-                fillColor: "#0078FF",
-                color: "#000",
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.8,
-            });
-
-            userMarker = userIcon.addTo(leafletMap);
-            userMarker.bindPopup("¡Estás Aquí!").openPopup();
-
-            // Forzar la re-ejecución del filtro reactivo para actualizar los popups
-            if (centros_ccss.length > 0) {
-                // Pequeño truco para forzar el re-render de Svelte
-                searchTerm = searchTerm.trim() + " ";
-                searchTerm = searchTerm.trim();
-            }
+        // Configuración de Leaflet, usa el timeout interno de 15s
+        leafletMap.locate({
+            setView: false,
+            maxZoom: 14,
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0,
         });
 
+        // Caso de éxito: Ubicación automática encontrada
+        leafletMap.once("locationfound", function (e) {
+            setUserLocation(e.latlng.lat, e.latlng.lng);
+        });
+
+        // Caso de fallo: El sistema no pudo obtener una ubicación precisa
         leafletMap.once("locationerror", function (e) {
-            alert("No fue posible obtener tu ubicación. " + e.message);
+            isAwaitingManualLocation = true;
+            leafletMap.on("click", onMapClick);
+
+            // Muestra la alerta explicando el fallback de CLIC MANUAL
+            alert(
+                "🚨 ¡Ubicación Automática Fallida! 🚨\n\n" +
+                    "Motivo: La ubicación exacta no se encontró en el tiempo límite (15s) o tu dispositivo no tiene GPS. " +
+                    "Ahora puedes hacer **CLIC DIRECTAMENTE en el mapa** donde te encuentras para establecer tu ubicación manualmente.",
+            );
+
+            if (leafletMap.getZoom() < 10) {
+                leafletMap.setView([9.95, -84.05], 10);
+            }
         });
     }
 
-    // 5. LÓGICA REACTIVA DE FILTRADO Y BÚSQUEDA (Estable y refactorizada)
+    // --- NUEVA FUNCIÓN: Centrar el mapa en un centro de la lista ---
+    function centerMapOnCenter(lat: number, lng: number, name: string) {
+        if (!leafletMap) return;
 
-    // BLOQUE 5a: Filtra los datos basado en las variables reactivas (filtro y búsqueda)
+        leafletMap.setView([lat, lng], 14);
+    }
+
+    // 5. LÓGICA REACTIVA DE FILTRADO, CÁLCULO DE DISTANCIA Y ORDENAMIENTO
     $: {
         if (centros_ccss.length === 0) {
             filteredCentros = [];
         } else {
             const lowerCaseSearchTerm = searchTerm.toLowerCase().trim();
+            const userLat = userMarker?.getLatLng().lat;
+            const userLng = userMarker?.getLatLng().lng;
 
             let data = centros_ccss;
 
@@ -206,11 +341,40 @@
                 );
             }
 
+            // 3. CÁLCULO DE DISTANCIA Y ORDENAMIENTO
+            if (userLat !== undefined && userLng !== undefined) {
+                data = data
+                    .map((centro) => {
+                        const distanceVal = haversineDistance(
+                            userLat,
+                            userLng,
+                            centro.latitud,
+                            centro.longitud,
+                        );
+                        const distanceNum = parseFloat(
+                            distanceVal.replace(" km", ""),
+                        );
+                        return {
+                            ...centro,
+                            distance_num: distanceNum,
+                            distance_display: distanceVal,
+                        };
+                    })
+                    .sort((a, b) => a.distance_num - b.distance_num);
+            } else {
+                data.sort((a, b) => a.nombre.localeCompare(b.nombre));
+            }
+
             filteredCentros = data;
+        }
+
+        // AJUSTE DE ZOOM AUTOMÁTICO
+        if (leafletMap) {
+            calculateAndFitBounds(filteredCentros);
         }
     }
 
-    // BLOQUE 5b: Dibuja los marcadores cada vez que la lista filtrada cambia O el mapa está listo
+    // BLOQUE 5b: Dibuja los marcadores
     $: if (filteredCentros && leafletMap) {
         addMarkersToMap(filteredCentros);
     }
@@ -220,16 +384,14 @@
         selectedFilter = filterType;
     }
 
-    // 7. FUNCIÓN PARA INICIALIZAR EL MAPA (sin cambios funcionales)
+    // 7. FUNCIÓN PARA INICIALIZAR EL MAPA
     function initializeMap(data: any[]) {
-        if (!mapElement || leafletMap) return;
+        if (!mapElement || leafletMap || !(window as any).L) return;
 
         const L = (window as any).L;
 
-        // Inicializar el mapa
         leafletMap = L.map(mapElement).setView([9.95, -84.05], 8);
 
-        // --- LÓGICA DE CONTROL DE CAPAS ---
         const osmStandard: TileLayer = L.tileLayer(
             "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
             {
@@ -263,20 +425,13 @@
 
         let layerName = "Centros CCSS (Marcadores)";
 
-        // VERIFICACIÓN Y FALLBACK DE CLUSTERIZACIÓN
         if (typeof L.markerClusterGroup === "function") {
             markersLayer = L.markerClusterGroup();
             layerName = "Centros CCSS (CLUSTERS)";
-            console.log("DEBUG: MarkerClusterGroup inicializado.");
         } else {
-            // FALLBACK SEGURO: Usar capa de grupo regular si el plugin no carga
             markersLayer = L.layerGroup();
-            console.error(
-                "DEBUG: MarkerClusterGroup no encontrado. Usando L.layerGroup().",
-            );
         }
 
-        // La capa de marcadores debe agregarse al mapa
         markersLayer.addTo(leafletMap);
 
         const overlayLayers = {
@@ -287,14 +442,29 @@
         L.control
             .layers(baseLayers, overlayLayers, { collapsed: false })
             .addTo(leafletMap);
+
+        // --- AGREGAR LEYENDA (Control de colores) ---
+        const Legend = L.Control.extend({
+            onAdd: function (map: Map) {
+                const div = L.DomUtil.create("div", "info legend");
+                div.innerHTML = `
+                    <h4>Tipos de Centros</h4>
+                    <div><span style="background-color: red;"></span> Hospital</div>
+                    <div><span style="background-color: blue;"></span> Clínica</div>
+                    <div><span style="background-color: green;"></span> EBAIS</div>
+                `;
+                L.DomEvent.disableClickPropagation(div);
+                return div;
+            },
+        });
+
+        new Legend({ position: "bottomright" }).addTo(leafletMap);
     }
 
     onMount(async () => {
-        // Cargar Leaflet
         const L = await import("leaflet");
         (window as any).L = L;
 
-        // Ajustar el ícono por defecto (IMPORTANTE para el funcionamiento de marcadores)
         const defaultIcon = new L.Icon({
             iconUrl:
                 "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -307,7 +477,6 @@
         });
         L.Marker.prototype.options.icon = defaultIcon;
 
-        // INICIALIZACIÓN DEL MODO OSCURO
         const savedMode = localStorage.getItem("darkMode");
         if (savedMode !== null) {
             isDarkMode = savedMode === "true";
@@ -319,7 +488,6 @@
         if (typeof document !== "undefined") {
             document.body.classList.toggle("dark-mode", isDarkMode);
         }
-        // FIN INICIALIZACIÓN MODO OSCURO
 
         try {
             const response = await fetch("/datos_ccss.json");
@@ -330,10 +498,17 @@
             }
             const data = await response.json();
             centros_ccss = data;
-            filteredCentros = data; // Inicializar la lista filtrada
-            initializeMap(centros_ccss);
+            filteredCentros = data;
+
+            // FIX: Inicializar el mapa después de un pequeño retraso (0ms) para que MarkerCluster cargue
+            setTimeout(() => {
+                initializeMap(centros_ccss);
+            }, 0);
         } catch (error) {
-            console.error("Ocurrió un error al procesar el JSON.", error);
+            console.error(
+                "Ocurrió un error al procesar el JSON o inicializar el mapa.",
+                error,
+            );
         }
     });
 </script>
@@ -370,6 +545,11 @@
     <div class="sidebar">
         <h3 class="sidebar-title">🏥 Centros CCSS</h3>
 
+        {#if isAwaitingManualLocation}
+            <div class="manual-locate-warning">
+                ⚠️ **Haga Clic en el Mapa** para establecer su ubicación.
+            </div>
+        {/if}
         <div class="control-group">
             <div class="search-box">
                 <input
@@ -408,9 +588,47 @@
             </div>
         </div>
 
-        {#if centros_ccss.length === 0}
-            <p class="loading-message">Cargando datos...</p>
-        {/if}
+        <div class="center-list-container">
+            {#if centros_ccss.length === 0}
+                <p class="loading-message">Cargando datos...</p>
+            {:else if filteredCentros.length > 0}
+                <p class="list-summary">
+                    Mostrando {filteredCentros.length} centros {userMarker
+                        ? "ordenados por distancia"
+                        : "ordenados alfabéticamente"}:
+                </p>
+
+                <ul class="center-list">
+                    {#each filteredCentros as centro (centro.nombre + centro.latitud + centro.longitud)}
+                        <li
+                            class="center-list-item"
+                            on:click={() =>
+                                centerMapOnCenter(
+                                    centro.latitud,
+                                    centro.longitud,
+                                    centro.nombre,
+                                )}
+                        >
+                            <div class="center-info">
+                                <h5 class="center-name">{centro.nombre}</h5>
+                                <p class="center-type">
+                                    {centro.tipo} ({centro.tipo_ccss})
+                                </p>
+                            </div>
+                            {#if centro.distance_display}
+                                <span class="center-distance">
+                                    {centro.distance_display}
+                                </span>
+                            {/if}
+                        </li>
+                    {/each}
+                </ul>
+            {:else}
+                <p class="loading-message">
+                    No se encontraron centros con los filtros aplicados.
+                </p>
+            {/if}
+        </div>
     </div>
 
     <div id="map" bind:this={mapElement}></div>
@@ -421,19 +639,16 @@
     /* VARIABLES CSS PARA MODO CLARO Y OSCURO */
     /* ----------------------------------------------------- */
 
-    /* MODO CLARO (Aplicado al body por defecto) */
     :global(body) {
-        /* Colores Base (Claro) */
-        --bg-color: #ffffff; /* Fondo principal de la página */
-        --text-color: #333333; /* Color de texto principal */
-        --sidebar-bg: #f8f9fa; /* Fondo de la barra lateral */
-        --border-color: #cccccc; /* Color de bordes y separadores */
-        --accent-color: #004a8b; /* Azul CCSS */
+        --bg-color: #ffffff;
+        --text-color: #333333;
+        --sidebar-bg: #f8f9fa;
+        --border-color: #cccccc;
+        --accent-color: #004a8b;
         --accent-color-hover: #003663;
-        --secondary-color: #28a745; /* Verde para ubicación/botones */
+        --secondary-color: #28a745;
         --shadow-color: rgba(0, 0, 0, 0.1);
 
-        /* Estilos del body que usan las variables */
         background-color: var(--bg-color);
         color: var(--text-color);
         transition:
@@ -444,20 +659,19 @@
         font-family: "Helvetica Neue", Arial, sans-serif;
     }
 
-    /* MODO OSCURO (Anula variables al tener la clase dark-mode) */
     :global(body.dark-mode) {
         --bg-color: #121212;
         --text-color: #f5f5f5;
         --sidebar-bg: #1e1e1e;
         --border-color: #333333;
-        --accent-color: #42a5f5; /* Azul CCSS más brillante */
+        --accent-color: #42a5f5;
         --accent-color-hover: #2196f3;
-        --secondary-color: #5cb85c; /* Verde brillante */
+        --secondary-color: #5cb85c;
         --shadow-color: rgba(255, 255, 255, 0.1);
     }
 
     /* ----------------------------------------------------- */
-    /* ESTILOS DE LAYOUT Y BARRA LATERAL (sin cambios) */
+    /* ESTILOS DE LAYOUT Y BARRA LATERAL */
     /* ----------------------------------------------------- */
 
     .osm-layout-container {
@@ -474,6 +688,39 @@
         z-index: 1000;
         overflow-y: auto;
         border-right: 1px solid var(--border-color);
+    }
+
+    /* ESTILO CONTADOR REGRESIVO (MANTENIDO SOLO POR SI ACASO, PERO NO SE USA) */
+    .countdown-timer {
+        margin-top: 10px;
+        padding: 8px;
+        background-color: #f0ad4e;
+        color: #333;
+        border-radius: 4px;
+        text-align: center;
+        font-weight: bold;
+        animation: none;
+    }
+
+    :global(body.dark-mode .countdown-timer) {
+        background-color: #ff9800;
+        color: #121212;
+    }
+
+    /* Advertencia de ubicación manual */
+    .manual-locate-warning {
+        background-color: #ffc107;
+        color: #333;
+        padding: 10px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    :global(body.dark-mode .manual-locate-warning) {
+        background-color: #f57f17;
+        color: #fff;
     }
 
     .sidebar-title {
@@ -504,7 +751,6 @@
         border-bottom: none;
     }
 
-    /* Botón de Modo Oscuro */
     .theme-toggle-button {
         width: 100%;
         padding: 10px;
@@ -522,7 +768,6 @@
         border-color: var(--accent-color-hover);
     }
 
-    /* Botón de Ubicación */
     .locate-button {
         width: 100%;
         padding: 10px;
@@ -597,17 +842,99 @@
     }
 
     /* ----------------------------------------------------- */
-    /* ESTILOS DE MODO OSCURO PARA LEAFLET */
+    /* ESTILOS DE LA LISTA LATERAL */
     /* ----------------------------------------------------- */
+    .center-list-container {
+        margin-top: 10px;
+        padding-top: 10px;
+        border-top: 1px solid var(--border-color);
+    }
 
-    /* Controles de Zoom */
+    .list-summary {
+        font-weight: bold;
+        color: var(--accent-color);
+        margin-bottom: 10px;
+        font-size: 0.9em;
+    }
+
+    .center-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .center-list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        margin-bottom: 8px;
+        background-color: var(--bg-color);
+        border: 1px solid var(--border-color);
+        border-radius: 4px;
+        cursor: pointer;
+        transition:
+            background-color 0.15s ease,
+            transform 0.1s ease;
+        box-shadow: 0 1px 3px var(--shadow-color);
+    }
+
+    :global(body.dark-mode .center-list-item) {
+        background-color: #242424;
+        border-color: #444;
+    }
+
+    .center-list-item:hover {
+        background-color: var(--sidebar-bg);
+        transform: translateY(-1px);
+    }
+    :global(body.dark-mode .center-list-item:hover) {
+        background-color: #2a2a2a;
+    }
+
+    .center-info {
+        flex-grow: 1;
+        margin-right: 10px;
+        overflow: hidden;
+    }
+
+    .center-name {
+        margin: 0;
+        font-size: 1em;
+        font-weight: bold;
+        color: var(--text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .center-type {
+        margin: 0;
+        font-size: 0.8em;
+        color: #888;
+        margin-top: 2px;
+    }
+
+    :global(body.dark-mode .center-type) {
+        color: #bbb;
+    }
+
+    .center-distance {
+        font-weight: bold;
+        font-size: 0.9em;
+        color: var(--secondary-color);
+        flex-shrink: 0;
+    }
+    /* FIN ESTILOS DE LA LISTA LATERAL */
+
+    /* Estilos globales de Leaflet */
+
     :global(body.dark-mode .leaflet-control-zoom a) {
         background-color: var(--sidebar-bg);
         border-bottom: 1px solid var(--border-color);
         color: var(--text-color) !important;
     }
 
-    /* Estilos del Control de Capas en Modo Oscuro */
     :global(body.dark-mode .leaflet-control-layers) {
         background: var(--sidebar-bg);
         color: var(--text-color);
@@ -622,7 +949,6 @@
         filter: invert(100%);
     }
 
-    /* Fondo del Popup y Tip (Flecha) */
     :global(body.dark-mode .leaflet-popup-content-wrapper),
     :global(body.dark-mode .leaflet-popup-tip) {
         background: var(--sidebar-bg);
@@ -630,7 +956,6 @@
         box-shadow: 0 3px 14px var(--shadow-color);
     }
 
-    /* Título y elementos del Popup */
     :global(.leaflet-popup-content h4) {
         color: var(--accent-color) !important;
     }
@@ -641,7 +966,6 @@
         color: var(--text-color);
     }
 
-    /* Estilos de navegación en el popup */
     :global(.leaflet-popup-content a) {
         text-decoration: none;
         color: white;
@@ -657,7 +981,6 @@
         background-color: #33ccff;
     }
 
-    /* Estilos para la apariencia de los clusters en Modo Oscuro */
     :global(body.dark-mode .marker-cluster-small) {
         background-color: rgba(66, 165, 245, 0.6);
     }
@@ -672,5 +995,45 @@
     :global(body.dark-mode .marker-cluster-large div) {
         background-color: rgba(66, 165, 245, 0.9);
         color: #121212;
+    }
+
+    :global(.info.legend) {
+        background: var(--sidebar-bg);
+        padding: 6px 8px;
+        font:
+            14px/16px Arial,
+            Helvetica,
+            sans-serif;
+        box-shadow: 0 0 15px var(--shadow-color);
+        border-radius: 5px;
+        color: var(--text-color);
+    }
+    :global(.info.legend h4) {
+        margin: 0 0 5px;
+        color: var(--text-color);
+        font-size: 1.1em;
+        font-weight: bold;
+    }
+    :global(.info.legend div) {
+        margin-bottom: 3px;
+        display: flex;
+        align-items: center;
+    }
+    :global(.info.legend span) {
+        width: 15px;
+        height: 15px;
+        margin-right: 5px;
+        border-radius: 50%;
+        display: inline-block;
+        border: 1px solid #333;
+    }
+
+    :global(body.dark-mode .info.legend span) {
+        border: 1px solid #ccc;
+    }
+    :global(body.dark-mode .leaflet-tooltip) {
+        background: var(--sidebar-bg);
+        color: var(--text-color);
+        border: 1px solid var(--border-color);
     }
 </style>
